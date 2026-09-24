@@ -27,6 +27,12 @@ class LivroPostPut(BaseModel):
     editora: str
     ano: int
 
+class LivroPatch(BaseModel):
+    autor: str | None = None
+    titulo: str | None = None
+    editora: str | None = None
+    ano: int | None = None
+
 # 4. Implementando o endpoint de leitura (GET)
 @app.get("/livros", response_model=List[Livro])
 async def listar_livros() -> List[Livro]:
@@ -49,12 +55,22 @@ async def adicionar_livro(livro: LivroPostPut)-> Livro:
     livros_db[novo_id] = livro_gravado.model_dump()
     return livro_gravado
 
-#
+# 7. Implementando o endpoint de atualização de livro (PUT)
 @app.put("/livros/{livro_id}", response_model=Livro)    
 async def atualizar_livro(livro_id: UUID, livro_update: LivroPostPut) -> Livro:
     for id, livro_existente in livros_db.items():
         if livro_existente["uuid"] == livro_id:
-            livros_db[id] = dict(uuid=livro_id, autor=livro_update.autor, titulo=livro_update.titulo, editora=livro_update.editora, ano=livro_update.ano)
+            livros_db[id] = dict(uuid=livro_id, **livro_update.model_dump()) # model_dump() retorna um dicionário com os dados do modelo)
+            return Livro(**livros_db[id]) # type: ignore
+    raise HTTPException(status_code=404, detail="Livro não encontrado")
+
+# 8. Implementando o endpoint de atualização parcial de livro (PATCH)
+@app.patch("/livros/{livro_id}", response_model=Livro)
+async def atualizar_parcial_livro(livro_id: UUID, livro_update: LivroPatch) -> Livro:
+    for id, livro_existente in livros_db.items():
+        if livro_existente["uuid"] == livro_id:
+            livro_atualizado = {**livro_existente, **livro_update.model_dump()}
+            livros_db[id] = livro_atualizado
             return Livro(**livros_db[id]) # type: ignore
     raise HTTPException(status_code=404, detail="Livro não encontrado")
 

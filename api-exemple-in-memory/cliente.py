@@ -50,6 +50,46 @@ def adicionar_livro():
     print("\n Adicionar Livro:")
     tratar_resposta(resp)
 
+def atualizar_totalmente_livro():
+    selected_uuid = input("Digite o UUID do livro que deseja atualizar: ").strip()
+    livro_id = selected_uuid
+    print("\nDigite os dados atualizados do livro:")
+    autor = input("Digite o autor do livro: ")
+    titulo = input("Digite o título do livro: ")
+    editora = input("Digite a editora do livro: ")
+    ano = int(input("Digite o ano de publicação do livro: "))
+    payload = {
+        "autor": autor,
+        "titulo": titulo,
+        "editora": editora,
+        "ano": ano
+    }
+    resp = requests.put(f'{API_URL}/livros/{livro_id}', json=payload)
+    print("\n Atualizar Livro:")
+    tratar_resposta(resp)
+
+def atualizar_parcial_livro():
+    selected_uuid = input("Digite o UUID do livro que deseja atualizar parcialmente: ").strip()
+    livro_id = selected_uuid
+    print("\nDigite os dados atualizados do livro (deixe em branco para não alterar):")
+    autor = input("Digite o autor do livro: ")
+    titulo = input("Digite o título do livro: ")
+    editora = input("Digite a editora do livro: ")
+    ano_input = input("Digite o ano de publicação do livro: ")
+    ano = int(ano_input) if ano_input else None
+    payload = {}
+    if autor:
+        payload["autor"] = autor
+    if titulo:
+        payload["titulo"] = titulo
+    if editora:
+        payload["editora"] = editora
+    if ano is not None:
+        payload["ano"] = ano
+
+    resp = requests.patch(f'{API_URL}/livros/{livro_id}', json=payload)
+    print("\n Atualizar Livro Parcialmente:")
+    tratar_resposta(resp)
 
 def menu():
     while True:
