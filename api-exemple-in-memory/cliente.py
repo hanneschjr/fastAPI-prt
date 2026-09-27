@@ -99,6 +99,8 @@ def menu():
         print("1. Listar livros")
         print("2. Exibir livro pelo UUID")
         print("3. Adicionar livro")
+        print("4. Editar totalmente o livro pelo UUID")
+        print("5. Editar parcialmente o livre pelo UUID")
         print("0. Sair")
 
         # .strip() para remover espaços em branco
@@ -110,6 +112,10 @@ def menu():
             exibir_livro_por_id()
         elif opcao == "3":
             adicionar_livro()
+        elif opcao == "4":
+            atualizar_totalmente_livro()
+        elif opcao == "5":
+            atualizar_parcial_livro()
         elif opcao == "0":
             print("Encerrando o cliente...")
             break

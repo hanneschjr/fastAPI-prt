@@ -33,6 +33,13 @@ class LivroPatch(BaseModel):
     editora: str | None = None
     ano: int | None = None
 
+    @field_validator("autor", "titulo", "editora", "ano")
+    @classmethod
+    def nao_aceitar_null(cls, valor):
+        if valor is None:
+            raise ValueError("não pode ser null; omita o campo para não alterá-lo")
+        return valor
+
 # 4. Implementando o endpoint de leitura (GET)
 @app.get("/livros", response_model=List[Livro])
 async def listar_livros() -> List[Livro]:
@@ -67,9 +74,10 @@ async def atualizar_livro(livro_id: UUID, livro_update: LivroPostPut) -> Livro:
 # 8. Implementando o endpoint de atualização parcial de livro (PATCH)
 @app.patch("/livros/{livro_id}", response_model=Livro)
 async def atualizar_parcial_livro(livro_id: UUID, livro_update: LivroPatch) -> Livro:
+    print({**livro_update.model_dump()})
     for id, livro_existente in livros_db.items():
         if livro_existente["uuid"] == livro_id:
-            livro_atualizado = {**livro_existente, **livro_update.model_dump()}
+            livro_atualizado = {**livro_existente, **livro_update.model_dump(exclude_unset=True)}
             livros_db[id] = livro_atualizado
             return Livro(**livros_db[id]) # type: ignore
     raise HTTPException(status_code=404, detail="Livro não encontrado")
