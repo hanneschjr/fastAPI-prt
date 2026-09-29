@@ -33,7 +33,7 @@ class LivroPostPut(BaseModel):
         texto = valor.strip() 
         if not texto:
             raise ValueError("não pode ser vazio ou contar apenas espaços")
-        return valor
+        return texto
 
 class LivroPatch(BaseModel):
     autor: str | None = None
@@ -54,7 +54,7 @@ class LivroPatch(BaseModel):
         texto = valor.strip()
         if not texto:
             raise ValueError("não pode ser vazio ou contar apenas espaços")
-        return valor
+        return texto
 
 # 4. Implementando o endpoint de leitura (GET)
 @app.get("/livros", response_model=List[Livro])
