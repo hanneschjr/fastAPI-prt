@@ -1,6 +1,6 @@
 from uuid import UUID, uuid4
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import List
 
 # 1. Inicialização da API
@@ -27,6 +27,14 @@ class LivroPostPut(BaseModel):
     editora: str
     ano: int
 
+    @field_validator("autor", "titulo", "editora")
+    @classmethod
+    def nao_aceitar_texto(cls, valor : str) -> str:
+        texto = valor.strip() 
+        if not texto:
+            raise ValueError("não pode ser vazio ou contar apenas espaços")
+        return valor
+
 class LivroPatch(BaseModel):
     autor: str | None = None
     titulo: str | None = None
@@ -37,7 +45,15 @@ class LivroPatch(BaseModel):
     @classmethod
     def nao_aceitar_null(cls, valor):
         if valor is None:
-            raise ValueError("não pode ser null; omita o campo para não alterá-lo")
+            raise ValueError("não pode ser null; apenas omita o campo para não alterá-lo")
+        return valor
+
+    @field_validator("autor", "titulo", "editora")
+    @classmethod
+    def nao_aceitar_texto(cls, valor: str) -> str:
+        texto = valor.strip()
+        if not texto:
+            raise ValueError("não pode ser vazio ou contar apenas espaços")
         return valor
 
 # 4. Implementando o endpoint de leitura (GET)
