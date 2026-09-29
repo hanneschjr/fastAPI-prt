@@ -56,6 +56,10 @@ class LivroPatch(BaseModel):
             raise ValueError("não pode ser vazio ou contar apenas espaços")
         return texto
 
+class ConfirmaDelete(BaseModel):
+    mensagem: str
+    uuid: UUID
+
 # 4. Implementando o endpoint de leitura (GET)
 @app.get("/livros", response_model=List[Livro])
 async def listar_livros() -> List[Livro]:
@@ -70,7 +74,7 @@ async def exibir_livro_por_id(livro_id: UUID) -> Livro:
     raise HTTPException(status_code=404, detail="Livro não encontrado")
 
 # 6. Implementando o endpoint de criação de livro (POST)
-@app.post("/livros", response_model=Livro, status_code=200)
+@app.post("/livros", response_model=Livro, status_code=201)
 async def adicionar_livro(livro: LivroPostPut)-> Livro:
     novo_uuid = uuid4()
     novo_id = max(livros_db.keys()) + 1 if livros_db else 1
@@ -96,6 +100,14 @@ async def atualizar_parcial_livro(livro_id: UUID, livro_update: LivroPatch) -> L
             livro_atualizado = {**livro_existente, **livro_update.model_dump(exclude_unset=True)}
             livros_db[id] = livro_atualizado
             return Livro(**livros_db[id]) # type: ignore
+    raise HTTPException(status_code=404, detail="Livro não encontrado")
+
+@app.delete("/livros/{livro_id}", response_model=ConfirmaDelete, responses={204: {"description": "Livro deletado com sucesso"}})
+async def deletar_livro(livro_id: UUID) -> ConfirmaDelete:
+    for id, livro in livros_db.items():
+        if livro["uuid"] == livro_id:
+            del livros_db[id]
+            return ConfirmaDelete(mensagem="Livro deletado com sucesso", uuid=livro_id)
     raise HTTPException(status_code=404, detail="Livro não encontrado")
 
 # if __name__ == "__main__":
