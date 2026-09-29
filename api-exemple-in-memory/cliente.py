@@ -36,10 +36,10 @@ def exibir_livro_por_id():
 
 def adicionar_livro():
     print("\nDigite os dados do novo Livro:")
-    autor = input("Digite o autor do livro: ")
-    titulo = input("Digite o título do livro: ")
-    editora = input("Digite a editora do livro: ")
-    ano = int(input("Digite o ano de publicação do livro: "))
+    autor = input("Digite o autor do livro: ").strip()
+    titulo = input("Digite o título do livro: ").strip()
+    editora = input("Digite a editora do livro: ").strip()
+    ano = int(input("Digite o ano de publicação do livro: ").strip())
     payload = {
         "autor": autor,
         "titulo": titulo,
@@ -54,10 +54,19 @@ def atualizar_totalmente_livro():
     selected_uuid = input("Digite o UUID do livro que deseja atualizar: ").strip()
     livro_id = selected_uuid
     print("\nDigite os dados atualizados do livro:")
-    autor = input("Digite o autor do livro: ")
-    titulo = input("Digite o título do livro: ")
-    editora = input("Digite a editora do livro: ")
-    ano = int(input("Digite o ano de publicação do livro: "))
+    autor = input("Digite o autor do livro: ").strip()
+    titulo = input("Digite o título do livro: ").strip()
+    editora = input("Digite a editora do livro: ").strip()
+    while True:
+        ano_input = input("Digite o ano de publicação do livro: ").strip()
+        try:
+            ano = int(ano_input)
+            if ano <= 0:
+                raise ValueError("Ano deve ser maior que 0.")
+            break
+        except ValueError:
+            print("Entrada inválida. Digite um número inteiro positivo ou deixe em branco para não alterar.")
+
     payload = {
         "autor": autor,
         "titulo": titulo,
@@ -72,11 +81,22 @@ def atualizar_parcial_livro():
     selected_uuid = input("Digite o UUID do livro que deseja atualizar parcialmente: ").strip()
     livro_id = selected_uuid
     print("\nDigite os dados atualizados do livro (deixe em branco para não alterar):")
-    autor = input("Digite o autor do livro: ")
-    titulo = input("Digite o título do livro: ")
-    editora = input("Digite a editora do livro: ")
-    ano_input = input("Digite o ano de publicação do livro: ")
-    ano = int(ano_input) if ano_input else None
+    autor = input("Digite o autor do livro: ").strip()
+    titulo = input("Digite o título do livro: ").strip()
+    editora = input("Digite a editora do livro: ").strip()
+    while True:
+        ano_input = input("Digite o ano de publicação do livro: ").strip()
+        if ano_input == "":
+            ano = None
+            break
+        try:
+            ano = int(ano_input)
+            if ano <= 0:
+                raise ValueError("Ano deve ser maior que 0.")
+            break
+        except ValueError:
+            print("Entrada inválida. Digite um número inteiro positivo ou deixe em branco para não alterar.")
+
     payload = {}
     if autor:
         payload["autor"] = autor
