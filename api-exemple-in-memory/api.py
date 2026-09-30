@@ -83,7 +83,7 @@ async def adicionar_livro(livro: LivroPostPut)-> Livro:
     return livro_gravado
 
 # 7. Implementando o endpoint de atualização de livro (PUT)
-@app.put("/livros/{livro_id}", response_model=Livro)    
+@app.put("/livros/{livro_id}", response_model=Livro)
 async def atualizar_livro(livro_id: UUID, livro_update: LivroPostPut) -> Livro:
     for id, livro_existente in livros_db.items():
         if livro_existente["uuid"] == livro_id:
@@ -102,12 +102,13 @@ async def atualizar_parcial_livro(livro_id: UUID, livro_update: LivroPatch) -> L
             return Livro(**livros_db[id]) # type: ignore
     raise HTTPException(status_code=404, detail="Livro não encontrado")
 
-@app.delete("/livros/{livro_id}", response_model=ConfirmaDelete, responses={204: {"description": "Livro deletado com sucesso"}})
+@app.delete("/livros/{livro_id}", response_model=ConfirmaDelete, responses={404: {"description": "Livro não encontrado"},
+                                                                            422: {"description": "UUID inválido"}})
 async def deletar_livro(livro_id: UUID) -> ConfirmaDelete:
-    for id, livro in livros_db.items():
+    for index, livro in livros_db.items():
         if livro["uuid"] == livro_id:
-            del livros_db[id]
-            return ConfirmaDelete(mensagem="Livro deletado com sucesso", uuid=livro_id)
+            del livros_db[index]
+            return ConfirmaDelete(mensagem=f"Livro {index} deletado com sucesso", uuid=livro_id)
     raise HTTPException(status_code=404, detail="Livro não encontrado")
 
 # if __name__ == "__main__":
