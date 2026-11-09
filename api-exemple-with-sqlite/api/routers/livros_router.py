@@ -1,6 +1,6 @@
 from uuid import UUID, uuid4
 from fastapi import APIRouter, Depends, HTTPException
-from api.models import Livro, LivroPatch, LivroPut, LivroResposta, LivroPost
+from api.models import ConfirmaDelete, Livro, LivroPatch, LivroPut, LivroResposta, LivroPost
 from typing import Annotated
 from sqlmodel import Session, select
 from api.database import get_session
@@ -60,7 +60,7 @@ async def atualizar_parcial_livro(livro_id:UUID, livro_update:LivroPatch, sessio
         raise HTTPException(status_code=400, detail="Nenhum dado enviado para atualização!")
 
     if livro := session.exec(select(Livro).where(Livro.uuid == livro_id)).first():
-        for key, value in update_data: # pega os campos nomeados do modelo
+        for key, value in update_data.items(): # pega os campos nomeados do dicionário update_data
             setattr(livro, key, value) # altera o objeto livro na memória do Python (antes de ir ao banco)
         session.add(livro) # desnecessário pois o objeto livro já exite na sessão e não precisa ser substituído
         session.commit()
@@ -68,3 +68,18 @@ async def atualizar_parcial_livro(livro_id:UUID, livro_update:LivroPatch, sessio
         return LivroResposta.model_validate(livro)
 
     raise HTTPException(status_code=404, detail="Livro não encontrado!")
+
+
+# DELETE - Deletar um livro
+@router.delete("/{livro_id}", response_model=ConfirmaDelete,
+             responses={404: {"description": "Livro não encontrado!"}}) # responses aqui só na documentação.
+async def deletar_livro(livro_id:UUID, session:SessionDep) -> ConfirmaDelete:
+    if livro := session.exec(select(Livro).where(Livro.uuid == livro_id)).first():
+        titulo = livro.titulo
+        session.delete(livro)
+        session.commit()
+        return ConfirmaDelete(mensagem=f"Livro '{titulo}' deletado com sucesso!")
+    
+    raise HTTPException(status_code=404, detail="Livro não encontrado!")
+
+
