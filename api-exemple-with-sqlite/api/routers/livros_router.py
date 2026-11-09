@@ -1,6 +1,6 @@
 from uuid import UUID, uuid4
 from fastapi import APIRouter, Depends, HTTPException
-from api.models import Livro, LivroPut, LivroResposta, LivroPost
+from api.models import Livro, LivroPatch, LivroPut, LivroResposta, LivroPost
 from typing import Annotated
 from sqlmodel import Session, select
 from api.database import get_session
@@ -49,4 +49,22 @@ async def atualizar_livro(livro_id:UUID, livro_update:LivroPut, session:SessionD
 
     raise HTTPException(status_code=404, detail="Livro não encontrado!")
 
+# PATCH - Mudar campos selecionados de um livro
+@router.patch("/{livro_id}", response_model=LivroResposta,
+             responses={404: {"description": "Livro não encontrado!"},
+                        400: {"description":"Nenhum dado enviado para atualização!"}}) # responses aqui só na documentação.
+async def atualizar_parcial_livro(livro_id:UUID, livro_update:LivroPatch, session:SessionDep) -> LivroResposta:
+    update_data = livro_update.model_dump(exclude_unset=True, exclude_none=True)
 
+    if not update_data:
+        raise HTTPException(status_code=400, detail="Nenhum dado enviado para atualização!")
+
+    if livro := session.exec(select(Livro).where(Livro.uuid == livro_id)).first():
+        for key, value in update_data: # pega os campos nomeados do modelo
+            setattr(livro, key, value) # altera o objeto livro na memória do Python (antes de ir ao banco)
+        session.add(livro) # desnecessário pois o objeto livro já exite na sessão e não precisa ser substituído
+        session.commit()
+        session.refresh(livro) # retorna o livro que está na base de dados só para ter certeza do que foi.
+        return LivroResposta.model_validate(livro)
+
+    raise HTTPException(status_code=404, detail="Livro não encontrado!")
