@@ -1,8 +1,8 @@
 from uuid import UUID, uuid4
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from api.models import ConfirmaDelete, Livro, LivroPatch, LivroPut, LivroResposta, LivroPost
 from typing import Annotated
-from sqlmodel import Session, select
+from sqlmodel import Session, func, select
 from api.database import get_session
 
 router = APIRouter(prefix="/livros", tags=["livros"])
@@ -12,12 +12,31 @@ router = APIRouter(prefix="/livros", tags=["livros"])
 # Isso permite que as rotas do FastAPI recebam automaticamente uma sessão de banco de dados quando forem chamadas.
 SessionDep = Annotated[Session, Depends(get_session)] 
 
-# GET - Listar Livros
-@router.get("/", response_model=list[LivroResposta])
-async def listar_livros(session: SessionDep) -> list[LivroResposta]:
-    livros = session.exec(select(Livro)).all()
-    return [LivroResposta.model_validate(livro) for livro in livros] # é redundnate! Poderia ser "return livros"
+# # GET - Listar Livros - sem paginação
+# @router.get("/", response_model=list[LivroResposta])
+# async def listar_livros(session: SessionDep) -> list[LivroResposta]:
+#     livros = session.exec(select(Livro)).all()
+#     return [LivroResposta.model_validate(livro) for livro in livros] # é redundnate! Poderia ser "return livros"
 
+
+# GET - Listar Livros - com paginação
+@router.get("/", response_model=list[LivroResposta])
+async def listar_livros(session: SessionDep, response: Response, page: int= Query(1, ge=1)) -> list[LivroResposta]:
+    PAGE_SIZE = 10
+    total_items = session.exec(select(func.count()).select_from(Livro)).one()
+    total_pages = (total_items + PAGE_SIZE - 1) // PAGE_SIZE  # Calcula o número total de páginas
+
+    if page > total_pages and total_pages > 0:
+        page = total_pages  # Ajusta para a última página se a página solicitada for maior que o total de páginas
+        
+    offset = (page - 1) * PAGE_SIZE
+    query = (select(Livro).order_by(Livro.id).limit(PAGE_SIZE).offset(offset))
+    livros = session.exec(query).all()
+    response.headers["X-Total-Pages"] = str(total_pages)
+    response.headers["X-Total-Items"] = str(total_items)
+    return [LivroResposta.model_validate(livro) for livro in livros]  # Retorna a página pedida 
+    
+    
 # GET - Obter um livro
 @router.get("/{livro_id}", response_model=LivroResposta,
             responses={404:{"description": "Livro não encontrado!"}}) # responses aqui só na documentação da API.
@@ -27,10 +46,9 @@ async def obter_livro(livro_id: UUID, session:SessionDep) -> LivroResposta:
     raise HTTPException(status_code=404, detail="Livro não encontrado!")
 
 # POST - Adicionar um livro
-@router.post("/", response_model=LivroResposta) # responses aqui só documento o erro.
+@router.post("/", response_model=LivroResposta, status_code=201) 
 async def adicionar_livro(livro: LivroPost, session:SessionDep) -> LivroResposta:
-    novo_uuid = uuid4()
-    livro_gravado = Livro(**livro)
+    livro_gravado = Livro(**livro.model_dump()) 
     session.add(livro_gravado)
     session.commit()
     return LivroResposta.model_validate(livro_gravado)
@@ -78,7 +96,7 @@ async def deletar_livro(livro_id:UUID, session:SessionDep) -> ConfirmaDelete:
         titulo = livro.titulo
         session.delete(livro)
         session.commit()
-        return ConfirmaDelete(mensagem=f"Livro '{titulo}' deletado com sucesso!")
+        return ConfirmaDelete(mensagem=f"Livro '{titulo}' deletado com sucesso!", uuid=livro_id)
     
     raise HTTPException(status_code=404, detail="Livro não encontrado!")
 
